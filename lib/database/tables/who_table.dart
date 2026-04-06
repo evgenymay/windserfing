@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart';
 
-class WhoTable extends Table {
+class ItemTable extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text()();
-  TextColumn get role => text().nullable()();
+  IntColumn get phone => integer()();
+  TextColumn get name => text().withLength(min: 1)();
   TextColumn get description => text().nullable()();
+  DateTimeColumn get registered => dateTime().nullable()();
 }
