@@ -1,4 +1,7 @@
+// lib/screens/who/who_screen.dart
+
 import 'package:flutter/material.dart';
+import 'who_field.dart';
 
 class WhoScreen extends StatelessWidget {
   const WhoScreen({super.key});
@@ -7,7 +10,7 @@ class WhoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Who'),
+        child: WhoField(),
       ),
     );
   }
