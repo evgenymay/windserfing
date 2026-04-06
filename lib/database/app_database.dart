@@ -18,6 +18,12 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  Stream<List<WhoTableData>> searchWho(String query) {
+    return (select(whoTable)
+          ..where((t) => t.phone.cast<String>().like('%$query%')))
+        .watch();
+  }
 }
 
 LazyDatabase _openConnection() {

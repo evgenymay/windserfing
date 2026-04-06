@@ -1,9 +1,12 @@
 // lib/widgets/who_field.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class WhoField extends StatefulWidget {
-  const WhoField({super.key});
+  final ValueChanged<String>? onChanged;
+
+  const WhoField({super.key, this.onChanged});
 
   @override
   State<WhoField> createState() => _WhoFieldState();
@@ -20,12 +23,19 @@ class _WhoFieldState extends State<WhoField> {
     final s = digits.take(11).join();
     String r = '';
     for (int i = 0; i < s.length; i++) {
-      if (i == 0) r += '+${s[i]}';
-      else if (i == 1) r += ' (${s[i]}';
-      else if (i == 4) r += ') ${s[i]}';
-      else if (i == 7) r += ' ${s[i]}';
-      else if (i == 9) r += ' ${s[i]}';
-      else r += s[i];
+      if (i == 0) {
+        r += '+${s[i]}';
+      } else if (i == 1) {
+        r += ' (${s[i]}';
+      } else if (i == 4) {
+        r += ') ${s[i]}';
+      } else if (i == 7) {
+        r += ' ${s[i]}';
+      } else if (i == 9) {
+        r += ' ${s[i]}';
+      } else {
+        r += s[i];
+      }
     }
     return r;
   }
@@ -36,6 +46,7 @@ class _WhoFieldState extends State<WhoField> {
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
+    widget.onChanged?.call(_digits.join());
   }
 
   void _showPopup() {
@@ -50,7 +61,7 @@ class _WhoFieldState extends State<WhoField> {
       ),
     );
     Future.delayed(const Duration(seconds: 2), () {
-      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
     });
   }
 

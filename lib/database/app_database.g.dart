@@ -28,31 +28,21 @@ class $ItemTableTable extends ItemTable
     'name',
     aliasedName,
     false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _descriptionMeta = const VerificationMeta(
-    'description',
-  );
-  @override
-  late final GeneratedColumn<String> description = GeneratedColumn<String>(
-    'description',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _priceMeta = const VerificationMeta('price');
   @override
-  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+  late final GeneratedColumn<int> price = GeneratedColumn<int>(
     'price',
     aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, description, price];
+  List<GeneratedColumn> get $columns => [id, name, price];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -76,20 +66,13 @@ class $ItemTableTable extends ItemTable
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
-    if (data.containsKey('description')) {
-      context.handle(
-        _descriptionMeta,
-        description.isAcceptableOrUnknown(
-          data['description']!,
-          _descriptionMeta,
-        ),
-      );
-    }
     if (data.containsKey('price')) {
       context.handle(
         _priceMeta,
         price.isAcceptableOrUnknown(data['price']!, _priceMeta),
       );
+    } else if (isInserting) {
+      context.missing(_priceMeta);
     }
     return context;
   }
@@ -108,14 +91,10 @@ class $ItemTableTable extends ItemTable
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      description: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}description'],
-      ),
       price: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
+        DriftSqlType.int,
         data['${effectivePrefix}price'],
-      ),
+      )!,
     );
   }
 
@@ -128,25 +107,18 @@ class $ItemTableTable extends ItemTable
 class ItemTableData extends DataClass implements Insertable<ItemTableData> {
   final int id;
   final String name;
-  final String? description;
-  final double? price;
+  final int price;
   const ItemTableData({
     required this.id,
     required this.name,
-    this.description,
-    this.price,
+    required this.price,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || description != null) {
-      map['description'] = Variable<String>(description);
-    }
-    if (!nullToAbsent || price != null) {
-      map['price'] = Variable<double>(price);
-    }
+    map['price'] = Variable<int>(price);
     return map;
   }
 
@@ -154,12 +126,7 @@ class ItemTableData extends DataClass implements Insertable<ItemTableData> {
     return ItemTableCompanion(
       id: Value(id),
       name: Value(name),
-      description: description == null && nullToAbsent
-          ? const Value.absent()
-          : Value(description),
-      price: price == null && nullToAbsent
-          ? const Value.absent()
-          : Value(price),
+      price: Value(price),
     );
   }
 
@@ -171,8 +138,7 @@ class ItemTableData extends DataClass implements Insertable<ItemTableData> {
     return ItemTableData(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      description: serializer.fromJson<String?>(json['description']),
-      price: serializer.fromJson<double?>(json['price']),
+      price: serializer.fromJson<int>(json['price']),
     );
   }
   @override
@@ -181,29 +147,19 @@ class ItemTableData extends DataClass implements Insertable<ItemTableData> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
-      'description': serializer.toJson<String?>(description),
-      'price': serializer.toJson<double?>(price),
+      'price': serializer.toJson<int>(price),
     };
   }
 
-  ItemTableData copyWith({
-    int? id,
-    String? name,
-    Value<String?> description = const Value.absent(),
-    Value<double?> price = const Value.absent(),
-  }) => ItemTableData(
+  ItemTableData copyWith({int? id, String? name, int? price}) => ItemTableData(
     id: id ?? this.id,
     name: name ?? this.name,
-    description: description.present ? description.value : this.description,
-    price: price.present ? price.value : this.price,
+    price: price ?? this.price,
   );
   ItemTableData copyWithCompanion(ItemTableCompanion data) {
     return ItemTableData(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      description: data.description.present
-          ? data.description.value
-          : this.description,
       price: data.price.present ? data.price.value : this.price,
     );
   }
@@ -213,51 +169,45 @@ class ItemTableData extends DataClass implements Insertable<ItemTableData> {
     return (StringBuffer('ItemTableData(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
           ..write('price: $price')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, description, price);
+  int get hashCode => Object.hash(id, name, price);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ItemTableData &&
           other.id == this.id &&
           other.name == this.name &&
-          other.description == this.description &&
           other.price == this.price);
 }
 
 class ItemTableCompanion extends UpdateCompanion<ItemTableData> {
   final Value<int> id;
   final Value<String> name;
-  final Value<String?> description;
-  final Value<double?> price;
+  final Value<int> price;
   const ItemTableCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
-    this.description = const Value.absent(),
     this.price = const Value.absent(),
   });
   ItemTableCompanion.insert({
     this.id = const Value.absent(),
     required String name,
-    this.description = const Value.absent(),
-    this.price = const Value.absent(),
-  }) : name = Value(name);
+    required int price,
+  }) : name = Value(name),
+       price = Value(price);
   static Insertable<ItemTableData> custom({
     Expression<int>? id,
     Expression<String>? name,
-    Expression<String>? description,
-    Expression<double>? price,
+    Expression<int>? price,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
-      if (description != null) 'description': description,
       if (price != null) 'price': price,
     });
   }
@@ -265,13 +215,11 @@ class ItemTableCompanion extends UpdateCompanion<ItemTableData> {
   ItemTableCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
-    Value<String?>? description,
-    Value<double?>? price,
+    Value<int>? price,
   }) {
     return ItemTableCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
       price: price ?? this.price,
     );
   }
@@ -285,11 +233,8 @@ class ItemTableCompanion extends UpdateCompanion<ItemTableData> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (description.present) {
-      map['description'] = Variable<String>(description.value);
-    }
     if (price.present) {
-      map['price'] = Variable<double>(price.value);
+      map['price'] = Variable<int>(price.value);
     }
     return map;
   }
@@ -299,7 +244,6 @@ class ItemTableCompanion extends UpdateCompanion<ItemTableData> {
     return (StringBuffer('ItemTableCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
           ..write('price: $price')
           ..write(')'))
         .toString();
@@ -873,37 +817,47 @@ class $WhoTableTable extends WhoTable
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<int> phone = GeneratedColumn<int>(
+    'phone',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
     aliasedName,
     false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
   @override
-  late final GeneratedColumn<String> role = GeneratedColumn<String>(
-    'role',
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _descriptionMeta = const VerificationMeta(
-    'description',
+  static const VerificationMeta _registeredMeta = const VerificationMeta(
+    'registered',
   );
   @override
-  late final GeneratedColumn<String> description = GeneratedColumn<String>(
-    'description',
+  late final GeneratedColumn<DateTime> registered = GeneratedColumn<DateTime>(
+    'registered',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, role, description];
+  List<GeneratedColumn> get $columns => [id, phone, name, tags, registered];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -919,6 +873,14 @@ class $WhoTableTable extends WhoTable
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_phoneMeta);
+    }
     if (data.containsKey('name')) {
       context.handle(
         _nameMeta,
@@ -927,19 +889,16 @@ class $WhoTableTable extends WhoTable
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
-    if (data.containsKey('role')) {
+    if (data.containsKey('tags')) {
       context.handle(
-        _roleMeta,
-        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
       );
     }
-    if (data.containsKey('description')) {
+    if (data.containsKey('registered')) {
       context.handle(
-        _descriptionMeta,
-        description.isAcceptableOrUnknown(
-          data['description']!,
-          _descriptionMeta,
-        ),
+        _registeredMeta,
+        registered.isAcceptableOrUnknown(data['registered']!, _registeredMeta),
       );
     }
     return context;
@@ -955,17 +914,21 @@ class $WhoTableTable extends WhoTable
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}phone'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      role: attachedDatabase.typeMapping.read(
+      tags: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}role'],
+        data['${effectivePrefix}tags'],
       ),
-      description: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}description'],
+      registered: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}registered'],
       ),
     );
   }
@@ -978,25 +941,28 @@ class $WhoTableTable extends WhoTable
 
 class WhoTableData extends DataClass implements Insertable<WhoTableData> {
   final int id;
+  final int phone;
   final String name;
-  final String? role;
-  final String? description;
+  final String? tags;
+  final DateTime? registered;
   const WhoTableData({
     required this.id,
+    required this.phone,
     required this.name,
-    this.role,
-    this.description,
+    this.tags,
+    this.registered,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['phone'] = Variable<int>(phone);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || role != null) {
-      map['role'] = Variable<String>(role);
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
     }
-    if (!nullToAbsent || description != null) {
-      map['description'] = Variable<String>(description);
+    if (!nullToAbsent || registered != null) {
+      map['registered'] = Variable<DateTime>(registered);
     }
     return map;
   }
@@ -1004,11 +970,12 @@ class WhoTableData extends DataClass implements Insertable<WhoTableData> {
   WhoTableCompanion toCompanion(bool nullToAbsent) {
     return WhoTableCompanion(
       id: Value(id),
+      phone: Value(phone),
       name: Value(name),
-      role: role == null && nullToAbsent ? const Value.absent() : Value(role),
-      description: description == null && nullToAbsent
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      registered: registered == null && nullToAbsent
           ? const Value.absent()
-          : Value(description),
+          : Value(registered),
     );
   }
 
@@ -1019,9 +986,10 @@ class WhoTableData extends DataClass implements Insertable<WhoTableData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return WhoTableData(
       id: serializer.fromJson<int>(json['id']),
+      phone: serializer.fromJson<int>(json['phone']),
       name: serializer.fromJson<String>(json['name']),
-      role: serializer.fromJson<String?>(json['role']),
-      description: serializer.fromJson<String?>(json['description']),
+      tags: serializer.fromJson<String?>(json['tags']),
+      registered: serializer.fromJson<DateTime?>(json['registered']),
     );
   }
   @override
@@ -1029,31 +997,35 @@ class WhoTableData extends DataClass implements Insertable<WhoTableData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'phone': serializer.toJson<int>(phone),
       'name': serializer.toJson<String>(name),
-      'role': serializer.toJson<String?>(role),
-      'description': serializer.toJson<String?>(description),
+      'tags': serializer.toJson<String?>(tags),
+      'registered': serializer.toJson<DateTime?>(registered),
     };
   }
 
   WhoTableData copyWith({
     int? id,
+    int? phone,
     String? name,
-    Value<String?> role = const Value.absent(),
-    Value<String?> description = const Value.absent(),
+    Value<String?> tags = const Value.absent(),
+    Value<DateTime?> registered = const Value.absent(),
   }) => WhoTableData(
     id: id ?? this.id,
+    phone: phone ?? this.phone,
     name: name ?? this.name,
-    role: role.present ? role.value : this.role,
-    description: description.present ? description.value : this.description,
+    tags: tags.present ? tags.value : this.tags,
+    registered: registered.present ? registered.value : this.registered,
   );
   WhoTableData copyWithCompanion(WhoTableCompanion data) {
     return WhoTableData(
       id: data.id.present ? data.id.value : this.id,
+      phone: data.phone.present ? data.phone.value : this.phone,
       name: data.name.present ? data.name.value : this.name,
-      role: data.role.present ? data.role.value : this.role,
-      description: data.description.present
-          ? data.description.value
-          : this.description,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      registered: data.registered.present
+          ? data.registered.value
+          : this.registered,
     );
   }
 
@@ -1061,67 +1033,77 @@ class WhoTableData extends DataClass implements Insertable<WhoTableData> {
   String toString() {
     return (StringBuffer('WhoTableData(')
           ..write('id: $id, ')
+          ..write('phone: $phone, ')
           ..write('name: $name, ')
-          ..write('role: $role, ')
-          ..write('description: $description')
+          ..write('tags: $tags, ')
+          ..write('registered: $registered')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, role, description);
+  int get hashCode => Object.hash(id, phone, name, tags, registered);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is WhoTableData &&
           other.id == this.id &&
+          other.phone == this.phone &&
           other.name == this.name &&
-          other.role == this.role &&
-          other.description == this.description);
+          other.tags == this.tags &&
+          other.registered == this.registered);
 }
 
 class WhoTableCompanion extends UpdateCompanion<WhoTableData> {
   final Value<int> id;
+  final Value<int> phone;
   final Value<String> name;
-  final Value<String?> role;
-  final Value<String?> description;
+  final Value<String?> tags;
+  final Value<DateTime?> registered;
   const WhoTableCompanion({
     this.id = const Value.absent(),
+    this.phone = const Value.absent(),
     this.name = const Value.absent(),
-    this.role = const Value.absent(),
-    this.description = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.registered = const Value.absent(),
   });
   WhoTableCompanion.insert({
     this.id = const Value.absent(),
+    required int phone,
     required String name,
-    this.role = const Value.absent(),
-    this.description = const Value.absent(),
-  }) : name = Value(name);
+    this.tags = const Value.absent(),
+    this.registered = const Value.absent(),
+  }) : phone = Value(phone),
+       name = Value(name);
   static Insertable<WhoTableData> custom({
     Expression<int>? id,
+    Expression<int>? phone,
     Expression<String>? name,
-    Expression<String>? role,
-    Expression<String>? description,
+    Expression<String>? tags,
+    Expression<DateTime>? registered,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (phone != null) 'phone': phone,
       if (name != null) 'name': name,
-      if (role != null) 'role': role,
-      if (description != null) 'description': description,
+      if (tags != null) 'tags': tags,
+      if (registered != null) 'registered': registered,
     });
   }
 
   WhoTableCompanion copyWith({
     Value<int>? id,
+    Value<int>? phone,
     Value<String>? name,
-    Value<String?>? role,
-    Value<String?>? description,
+    Value<String?>? tags,
+    Value<DateTime?>? registered,
   }) {
     return WhoTableCompanion(
       id: id ?? this.id,
+      phone: phone ?? this.phone,
       name: name ?? this.name,
-      role: role ?? this.role,
-      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      registered: registered ?? this.registered,
     );
   }
 
@@ -1131,14 +1113,17 @@ class WhoTableCompanion extends UpdateCompanion<WhoTableData> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
+    if (phone.present) {
+      map['phone'] = Variable<int>(phone.value);
+    }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (role.present) {
-      map['role'] = Variable<String>(role.value);
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
     }
-    if (description.present) {
-      map['description'] = Variable<String>(description.value);
+    if (registered.present) {
+      map['registered'] = Variable<DateTime>(registered.value);
     }
     return map;
   }
@@ -1147,9 +1132,10 @@ class WhoTableCompanion extends UpdateCompanion<WhoTableData> {
   String toString() {
     return (StringBuffer('WhoTableCompanion(')
           ..write('id: $id, ')
+          ..write('phone: $phone, ')
           ..write('name: $name, ')
-          ..write('role: $role, ')
-          ..write('description: $description')
+          ..write('tags: $tags, ')
+          ..write('registered: $registered')
           ..write(')'))
         .toString();
   }
@@ -1178,15 +1164,13 @@ typedef $$ItemTableTableCreateCompanionBuilder =
     ItemTableCompanion Function({
       Value<int> id,
       required String name,
-      Value<String?> description,
-      Value<double?> price,
+      required int price,
     });
 typedef $$ItemTableTableUpdateCompanionBuilder =
     ItemTableCompanion Function({
       Value<int> id,
       Value<String> name,
-      Value<String?> description,
-      Value<double?> price,
+      Value<int> price,
     });
 
 final class $$ItemTableTableReferences
@@ -1231,12 +1215,7 @@ class $$ItemTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get price => $composableBuilder(
+  ColumnFilters<int> get price => $composableBuilder(
     column: $table.price,
     builder: (column) => ColumnFilters(column),
   );
@@ -1286,12 +1265,7 @@ class $$ItemTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get price => $composableBuilder(
+  ColumnOrderings<int> get price => $composableBuilder(
     column: $table.price,
     builder: (column) => ColumnOrderings(column),
   );
@@ -1312,12 +1286,7 @@ class $$ItemTableTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get price =>
+  GeneratedColumn<int> get price =>
       $composableBuilder(column: $table.price, builder: (column) => column);
 
   Expression<T> orderTableRefs<T extends Object>(
@@ -1376,26 +1345,14 @@ class $$ItemTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String?> description = const Value.absent(),
-                Value<double?> price = const Value.absent(),
-              }) => ItemTableCompanion(
-                id: id,
-                name: name,
-                description: description,
-                price: price,
-              ),
+                Value<int> price = const Value.absent(),
+              }) => ItemTableCompanion(id: id, name: name, price: price),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
-                Value<String?> description = const Value.absent(),
-                Value<double?> price = const Value.absent(),
-              }) => ItemTableCompanion.insert(
-                id: id,
-                name: name,
-                description: description,
-                price: price,
-              ),
+                required int price,
+              }) => ItemTableCompanion.insert(id: id, name: name, price: price),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
@@ -1896,16 +1853,18 @@ typedef $$SettingTableTableProcessedTableManager =
 typedef $$WhoTableTableCreateCompanionBuilder =
     WhoTableCompanion Function({
       Value<int> id,
+      required int phone,
       required String name,
-      Value<String?> role,
-      Value<String?> description,
+      Value<String?> tags,
+      Value<DateTime?> registered,
     });
 typedef $$WhoTableTableUpdateCompanionBuilder =
     WhoTableCompanion Function({
       Value<int> id,
+      Value<int> phone,
       Value<String> name,
-      Value<String?> role,
-      Value<String?> description,
+      Value<String?> tags,
+      Value<DateTime?> registered,
     });
 
 class $$WhoTableTableFilterComposer
@@ -1922,18 +1881,23 @@ class $$WhoTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get role => $composableBuilder(
-    column: $table.role,
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get description => $composableBuilder(
-    column: $table.description,
+  ColumnFilters<DateTime> get registered => $composableBuilder(
+    column: $table.registered,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1952,18 +1916,23 @@ class $$WhoTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get role => $composableBuilder(
-    column: $table.role,
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get description => $composableBuilder(
-    column: $table.description,
+  ColumnOrderings<DateTime> get registered => $composableBuilder(
+    column: $table.registered,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -1980,14 +1949,17 @@ class $$WhoTableTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<int> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<String> get role =>
-      $composableBuilder(column: $table.role, builder: (column) => column);
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
 
-  GeneratedColumn<String> get description => $composableBuilder(
-    column: $table.description,
+  GeneratedColumn<DateTime> get registered => $composableBuilder(
+    column: $table.registered,
     builder: (column) => column,
   );
 }
@@ -2024,26 +1996,30 @@ class $$WhoTableTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<int> phone = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String?> role = const Value.absent(),
-                Value<String?> description = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<DateTime?> registered = const Value.absent(),
               }) => WhoTableCompanion(
                 id: id,
+                phone: phone,
                 name: name,
-                role: role,
-                description: description,
+                tags: tags,
+                registered: registered,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                required int phone,
                 required String name,
-                Value<String?> role = const Value.absent(),
-                Value<String?> description = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<DateTime?> registered = const Value.absent(),
               }) => WhoTableCompanion.insert(
                 id: id,
+                phone: phone,
                 name: name,
-                role: role,
-                description: description,
+                tags: tags,
+                registered: registered,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
